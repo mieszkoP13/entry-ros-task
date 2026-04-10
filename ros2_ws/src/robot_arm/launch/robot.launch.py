@@ -13,7 +13,6 @@ def generate_launch_description():
 
     return LaunchDescription([
 
-        # Publishes robot_description parameter + TF from URDF fixed joints
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
@@ -22,8 +21,18 @@ def generate_launch_description():
             parameters=[{'robot_description': robot_description}],
         ),
 
-        # TODO 1 — add your tf_publisher node here
+        Node(
+            package='robot_arm',
+            executable='tf_publisher',
+            name='tf_publisher',
+            output='screen'
+        ),
 
-        # TODO 2 — add your pose_publisher node here
+        Node(
+            package='robot_arm',
+            executable='pose_publisher',
+            name='pose_publisher',
+            output='screen'
+        ),
 
     ])
