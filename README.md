@@ -1,114 +1,30 @@
-# ROS 2  Task — 2-DOF Robot Arm
+## Submission Notes
 
-> **Ubuntu**
-> **ROS2 version:** ROS 2 Jazzy
-> **Requirements:** Docker + Docker Compose — nothing else needed on your machine
+### 1. Design decisions
 
----
-
-## Your Task
-
-This repo contains a skeleton ROS2 package for a 2-DOF robot arm.
-**Three parts are left unimplemented**, each marked with a `TODO` comment.
-Complete them. We will run our own evaluator against your submission.
+- The TF tree was split into static and dynamic parts:
+  - Static transforms (`world → base_link`, `link1 → link2`, `link2 → end_effector`) are published using `StaticTransformBroadcaster`.
+  - The dynamic joint (`base_link → link1`) is published using `TransformBroadcaster` at 50 Hz.
+- The dynamic motion is implemented as a sinusoidal rotation around the Z axis with 0.5 Hz frequency and 45° amplitude.
+- The pose publisher uses TF2 lookup via buffer and listener, with proper exception handling to ensure robustness when transforms are temporarily unavailable (no node crashes).
 
 ---
 
-## What to Implement
+### 2. Verification
 
-### TODO 1 — TF Publisher
-**File:** `ros2_ws/src/robot_arm/robot_arm/tf_publisher.py`
-
-Publish the following TF2 transform chain at 50 Hz:
-
+- Verified using:
 ```
-world
-  └── base_link        (static, identity)
-        └── link1      (rotates around Z — amplitude: 45°, frequency: 0.5 Hz)
-              └── link2          (static, x = 0.3 m offset)
-                    └── end_effector  (static, x = 0.2 m offset)
+ros2 topic echo /end_effector_pose
 ```
+- Confirmed that:
+  - The end-effector position changes continuously over time.
+  - The motion follows a smooth periodic pattern consistent with the rotating joint.
+  - Additionally checked TF chain correctness using ROS2 TF tools (tf tree consistency via runtime observation).
 
 ---
 
-### TODO 2 — End-Effector Pose Publisher
-**File:** `ros2_ws/src/robot_arm/robot_arm/pose_publisher.py`
+### 3. Improvements
 
-Look up the `world → end_effector` transform via TF2 and publish it as
-`geometry_msgs/PoseStamped` on `/end_effector_pose` at **10 Hz**.
-
-The node must handle TF exceptions gracefully — it must not crash if the
-transform is temporarily unavailable.
-
----
-
-### TODO 3 — Launch file
-
-Start your nodes via a the launch file `ros2_ws/src/robot_arm/launch/robot.launch.py`.
-
----
-
-### TODO 4 — Bonus (optional, ~20 min)
-
-Not in this repo. Described below under [Bonus](#bonus).
-
----
-
-## Running Your Solution
-
-### Start the robot node
-
-```bash
-xhost +local:docker
-docker compose up --build
-```
-
----
-
-## Repository Structure
-
-```
-.
-├── docker-compose.yml
-├── Dockerfile                          (complete — do not modify)
-├── entrypoint.sh                       (complete — do not modify)
-└── ros2_ws/
-    └── src/robot_arm/
-        ├── robot_arm/
-        │   ├── tf_publisher.py         ← TODO 1
-        │   └── pose_publisher.py       ← TODO 2
-        ├── launch/robot.launch.py      ← TODO 3
-        ├── urdf/robot_arm.urdf         (complete — do not modify)
-        └── rviz/robot.rviz             (complete — do not modify)
-```
-
----
-
-## Rules
-
-- Only modify files with `TODO` comments.
-  If you change anything else, explain why in your submission note.
-- `docker compose up --build` must work without any manual setup steps (xhost +local:docker).
----
-
-## Bonus
-
-If you have extra time, write a short Python script (outside the ROS2 package)
-that subscribes to `/end_effector_pose` and verifies the joint is actually
-animating — not just that messages are arriving. Think about what "animating
-correctly" means and how you'd detect it programmatically.
-
-This is the kind of check we run on your submission. Seeing how you approach it
-tells us a lot.
-
----
-
-## Submission
-
-Fork this repo, complete the TODOs, and send us a link to your fork.
-
-Include a short note (a few sentences) explaining:
-1. Any design decisions that aren't obvious from reading the code.
-2. How you verified your solution worked locally.
-3. Anything you'd improve with more time.
-
+- Add unit tests validating TF chain structure and expected transform relationships.
+- Extend debugging tools (e.g. RViz configuration for easier visualization of motion).
+- Improve pose validation by programmatically checking expected sinusoidal behavior.
